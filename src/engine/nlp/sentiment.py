@@ -13,6 +13,8 @@ Three back-ends, combined in an ensemble:
 
 score = P(positive) - P(negative). The ensemble weight of the lexicon and the neutral band
 are tuned per source (news vs social) on out-of-fold predictions (models/sentiment_ensemble.json).
+Geopolitical / macro / credit texts are outside the model's training domain, so for those
+the lexicon is up-weighted (domain-aware routing, evaluated in scripts/evaluate.py).
 """
 from __future__ import annotations
 
@@ -50,7 +52,17 @@ FINANCE_LEXICON = {
     "shorts": -0.8, "overvalued": -1.5, "undervalued": 1.5, "expands": 1.0, "growth": 1.2,
     "weak": -1.5, "weaker": -1.5, "strong": 1.5, "stronger": 1.5, "warning": -1.5, "warns": -1.8,
     "volatile": -1.0, "turmoil": -2.5, "crisis": -3.0, "bailout": -1.5, "halted": -1.5,
+    "invade": -2.5, "invades": -2.5, "invaded": -2.5, "airstrike": -2.5, "airstrikes": -2.5,
+    "shelling": -2.5, "escalates": -1.5, "escalation": -2.0, "junk": -2.0, "jobless": -1.5,
+    "ceasefire": 1.5, "truce": 1.5, "hyperinflation": -3.0, "devaluation": -2.0, "shutdown": -2.0,
 }
+
+# Event classes outside the supervised model's training domain (company news & market
+# tweets). For these the general-language lexicon ("killed", "invades", "collapse") is
+# more reliable, so it receives a higher weight.
+OUT_OF_DOMAIN_EVENTS = {"Geopolitical", "Macroeconomic", "Credit Event"}
+OOD_LEXICON_WEIGHT = 0.8
+OOD_NEUTRAL_BAND = 0.2
 
 
 class FinLexicon:
@@ -121,7 +133,7 @@ class SentimentEnsemble:
             except FileNotFoundError:
                 self.backend = "lexicon-only"
 
-    def score(self, texts: list[str], sources: list[str]) -> tuple[np.ndarray, dict]:
+    def score(self, texts: list[str], sources: list[str], event_types: list[str] | None = None) -> tuple[np.ndarray, dict]:
         """Return calibrated scores in [-1, 1] where 0 means neutral.
 
         The raw ensemble output is passed through a dead-zone transform using the tuned
@@ -134,8 +146,12 @@ class SentimentEnsemble:
             w = np.tile([0.0, 1.0], (len(texts), 1))
         else:
             w = np.array([self.WEIGHTS.get(s, (0.8, 0.2)) for s in sources])
-        raw = np.clip(w[:, 0] * mod + w[:, 1] * lex, -1, 1)
         band = np.array([self.bands.get(s, 0.15) for s in sources])
+        if event_types is not None and self.model is not None:
+            ood = np.array([e in OUT_OF_DOMAIN_EVENTS for e in event_types])
+            w[ood] = [1 - OOD_LEXICON_WEIGHT, OOD_LEXICON_WEIGHT]
+            band[ood] = OOD_NEUTRAL_BAND
+        raw = np.clip(w[:, 0] * mod + w[:, 1] * lex, -1, 1)
         cal = np.sign(raw) * np.maximum(0.0, np.abs(raw) - band) / (1 - band)
         return np.round(cal, 4), {"lexicon": lex, "model": mod, "raw": raw}
 

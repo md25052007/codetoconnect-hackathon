@@ -24,8 +24,8 @@ class RiskEngine:
         if not docs:
             return []
         texts = [d.text for d in docs]
-        sent, parts = self.sentiment.score(texts, [d.source for d in docs])
         evs = self.events.predict(texts)
+        sent, parts = self.sentiment.score(texts, [d.source for d in docs], [e[0] for e in evs])
         out: list[RiskSignal] = []
         for i, d in enumerate(docs):
             ev, ev_conf, ev_method = evs[i]

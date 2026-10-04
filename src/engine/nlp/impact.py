@@ -9,7 +9,8 @@ A transparent, explainable scoring model (every factor is returned in ``explain`
 * severity    - base severity of the event class (config.EVENT_SEVERITY)
 * intensity   - 0.6 + 0.4*|sentiment|; strongly worded news matters more
 * credibility - news 1.0; social 0.6-1.0 rising with author reach (log followers, verified)
-* reach       - market-wide 1.15, single company 1.0, sector broadcast 0.9
+* reach       - market-wide 1.15 if the story is systemic (major economies, energy, finance,
+                great powers) else 0.7; single company 1.0; sector broadcast 0.9
 * urgency     - shock words ("breaking", "crash", "emergency", "collapse" ...)
 * magnitude   - big numbers: moves >= 5 %, "billion", casualty counts
 * popularity  - top-voted news headlines (Reddit rank) get a small boost
@@ -34,6 +35,16 @@ PCT_RE = re.compile(r"(\d+(?:\.\d+)?)\s?(?:%|percent|per cent)", re.IGNORECASE)
 BIG_MONEY_RE = re.compile(r"\b(?:billion|bn|trillion)\b|\$\d{2,}\s?b\b", re.IGNORECASE)
 CASUALTY_RE = re.compile(r"(\d[\d,]*)\s+(?:people\s+)?(?:killed|dead|deaths|died|wounded)", re.IGNORECASE)
 REACH = {"market": 1.15, "company": 1.0, "sector": 0.9}
+LOCAL_MARKET_REACH = 0.7
+# Cues that a market-wide story is systemic (major economies, energy, finance, great-power
+# conflict). A tragic but local event moves global markets far less than, say, sanctions
+# on Russia or an OPEC decision.
+SYSTEMIC_RE = re.compile(
+    r"\b(?:u\.?s\.?|united states|america|american|washington|obama|china|chinese|beijing|russia[n]?|moscow|putin|"
+    r"eu|europe(?:an)?|eurozone|ecb|germany|japan|uk|britain|saudi|iran|opec|nato|g7|g20|imf|world bank|"
+    r"fed|federal reserve|central bank|oil|crude|gas|energy|market[s]?|stocks?|bonds?|economy|economic|"
+    r"trade|tariffs?|sanctions?|currency|dollar|euro|yuan|ruble|rouble|banks?|debt|default|recession|"
+    r"inflation|nuclear|global|world)\b", re.IGNORECASE)
 
 
 def credibility(source: str, meta: dict) -> float:
@@ -53,6 +64,10 @@ def impact_score(text: str, event_type: str, sentiment: float, source: str,
     intensity = 0.6 + 0.4 * min(abs(sentiment), 1.0)
     cred = credibility(source, meta)
     reach = REACH.get(entity_type, 1.0)
+    systemic = None
+    if entity_type == "market":
+        systemic = bool(SYSTEMIC_RE.search(text))
+        reach = REACH["market"] if systemic else LOCAL_MARKET_REACH
 
     urgency = min(0.15, 0.06 * len(URGENCY_RE.findall(text)))
     magnitude = 0.0
@@ -71,5 +86,6 @@ def impact_score(text: str, event_type: str, sentiment: float, source: str,
     raw = sev * intensity * cred * reach + urgency + magnitude + popularity
     score = round(1 + 9 * max(0.0, min(1.0, raw)), 1)
     explain = {"severity": sev, "intensity": round(intensity, 3), "credibility": cred, "reach": reach,
-               "urgency": round(urgency, 3), "magnitude": round(magnitude, 3), "popularity": popularity}
+               "urgency": round(urgency, 3), "magnitude": round(magnitude, 3), "popularity": popularity,
+               "systemic": systemic}
     return score, explain

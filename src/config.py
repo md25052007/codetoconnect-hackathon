@@ -98,6 +98,12 @@ STRESS_TRIGGERS = {
     "Merger/Acquisition": 9,
 }
 
+# World-news feeds carry conflict stories every day, so a geopolitical stress test also
+# needs corroboration: at least N high-impact reports of that class on the same day,
+# unless a single report is extreme (impact >= STRESS_SINGLE_REPORT_OVERRIDE).
+STRESS_CORROBORATION = {"Geopolitical": 4}
+STRESS_SINGLE_REPORT_OVERRIDE = 9.0
+
 # Module A: rebalancer parameters
 REBALANCE = {
     "kappa": 0.35,         # tilt strength: weight multiplier = exp(kappa * z), z = relative sentiment

@@ -20,7 +20,10 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from src.config import MARKET, PORTFOLIO, STRESS_TRIGGERS
+from collections import defaultdict
+
+from src.config import (MARKET, PORTFOLIO, STRESS_CORROBORATION, STRESS_SINGLE_REPORT_OVERRIDE,
+                        STRESS_TRIGGERS)
 from src.modules.stress.scenarios import Scenario, scenario_for, severity_factor
 
 ASSUMED_CAPITAL_RATIO = 0.10  # capital held against the book, for a simple "capital at risk" metric
@@ -127,23 +130,33 @@ def run_stress(event_type: str, impact: float, trigger_text: str = "", trigger_t
 # ---------------------------------------------------------------------------
 # Signal subscription
 # ---------------------------------------------------------------------------
-def is_trigger(event_type: str, impact: float, entity_type: str = "market") -> bool:
+def is_trigger(event_type: str, impact: float, entity_type: str = "market", sentiment: float = -1.0) -> bool:
+    """High-impact, market-level, non-positive news of a stress-relevant class.
+    (A ceasefire is high-impact geopolitical news too, but it is not a risk event.)"""
     thr = STRESS_TRIGGERS.get(event_type)
-    return thr is not None and impact > thr and entity_type in ("market", "sector")
+    return (thr is not None and impact > thr and entity_type in ("market", "sector") and sentiment <= 0.0)
+
+
+def corroborated(event_type: str, impact: float, n_reports_today: int) -> bool:
+    need = STRESS_CORROBORATION.get(event_type, 1)
+    return n_reports_today >= need or impact >= STRESS_SINGLE_REPORT_OVERRIDE
 
 
 class StressMonitor:
-    """Streams signals; fires at most one stress test per event class per day."""
+    """Streams signals; fires at most one stress test per event class per day, once the
+    trigger is met and (for noisy classes) corroborated by several reports."""
 
     def __init__(self) -> None:
         self.portfolio = load_portfolio()
         self.fired: set[tuple[str, str]] = set()
+        self.counts: dict[tuple[str, str], int] = defaultdict(int)
 
     def on_signal(self, sig: dict) -> StressResult | None:
-        if not is_trigger(sig["event_type"], sig["impact"], sig.get("entity_type", "market")):
+        if not is_trigger(sig["event_type"], sig["impact"], sig.get("entity_type", "market"), sig.get("sentiment", -1.0)):
             return None
         key = (sig["event_type"], str(sig["timestamp"])[:10])
-        if key in self.fired:
+        self.counts[key] += 1
+        if key in self.fired or not corroborated(sig["event_type"], sig["impact"], self.counts[key]):
             return None
         self.fired.add(key)
         return run_stress(sig["event_type"], sig["impact"], sig.get("text", ""), str(sig["timestamp"]),
@@ -151,9 +164,13 @@ class StressMonitor:
 
 
 def triggered_events(signals: pd.DataFrame) -> pd.DataFrame:
-    """All historical market-level trigger events (one per class per day, highest impact)."""
+    """Historical stress triggers: one per class per day (highest-impact report), after
+    the threshold, negative-sentiment and corroboration rules."""
     s = signals[signals.entity == MARKET].copy()
-    s = s[[is_trigger(e, i) for e, i in zip(s.event_type, s.impact)]]
+    s = s[[is_trigger(e, i, "market", x) for e, i, x in zip(s.event_type, s.impact, s.sentiment)]]
     s["day"] = s.timestamp.dt.normalize()
+    s["reports"] = s.groupby(["event_type", "day"]).doc_id.transform("count")
     s = s.sort_values("impact", ascending=False).drop_duplicates(["event_type", "day"])
-    return s.sort_values("timestamp")[["timestamp", "event_type", "impact", "sentiment", "text", "doc_id"]].reset_index(drop=True)
+    s = s[[corroborated(e, i, n) for e, i, n in zip(s.event_type, s.impact, s.reports)]]
+    return s.sort_values("timestamp")[["timestamp", "event_type", "impact", "sentiment", "reports", "text",
+                                       "doc_id"]].reset_index(drop=True)

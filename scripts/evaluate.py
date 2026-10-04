@@ -1,6 +1,7 @@
 """Evaluate the engine against ground truth and realised market data.
 
 1. Event classification  - rules vs weak-supervised model vs hybrid on 200 hand-labelled texts
+   (+ sentiment on the 92 market-relevant ones: tests the domain-aware routing)
 2. Impact score          - do higher-impact days coincide with larger absolute price moves?
 3. Sentiment             - does the daily sentiment score line up with same-day returns?
 
@@ -39,6 +40,28 @@ def eval_events() -> dict:
                      "macro_f1": round(f1_score(y, pred, average="macro", zero_division=0), 4)}
     res["hybrid_report"] = classification_report(y, hyb, output_dict=True, zero_division=0)
     res["n"] = len(gold)
+    return res
+
+
+def eval_sentiment_gold() -> dict:
+    """Sentiment on the market-relevant part of the hand-labelled set (news headlines and
+    tweets about geopolitics, macro, credit, earnings ...), i.e. the engine's real domain."""
+    from src.engine.nlp.sentiment import get_sentiment, label
+    gold = pd.read_csv(EVAL / "event_gold.csv").dropna(subset=["sentiment"])
+    gold = gold[gold.sentiment != ""]
+    texts, y = gold.text.tolist(), gold.sentiment.values
+    srcs = gold.src.tolist()
+    ens = get_sentiment()
+    events = [r[0] for r in HybridEventClassifier().predict(texts)]
+    no_route, parts = ens.score(texts, srcs, None)
+    routed, _ = ens.score(texts, srcs, events)
+    res = {"n": int(len(gold))}
+    for name, pred in [("model_only", [label(x, 0.35) for x in parts["model"]]),
+                       ("finance_lexicon_only", [label(x, 0.05) for x in parts["lexicon"]]),
+                       ("ensemble_without_domain_routing", [label(x) for x in no_route]),
+                       ("ensemble_with_domain_routing", [label(x) for x in routed])]:
+        res[name] = {"accuracy": round(accuracy_score(y, pred), 4),
+                     "macro_f1": round(f1_score(y, pred, average="macro", zero_division=0), 4)}
     return res
 
 
@@ -97,6 +120,11 @@ def main() -> None:
     print("Event classification on hand-labelled set (n=%d):" % ev["n"])
     for k in ("rules_only", "weak_supervised_model_only", "hybrid"):
         print(f"  {k:28s} {ev[k]}")
+    sg = eval_sentiment_gold()
+    print("\nSentiment on market-relevant hand-labelled texts (n=%d):" % sg["n"])
+    for k, v in sg.items():
+        if k != "n":
+            print(f"  {k:34s} {v}")
     iv = eval_impact_and_sentiment()
     print("\nImpact validation (companies):")
     for r in iv["companies"]["by_impact_bucket"]:
@@ -110,7 +138,7 @@ def main() -> None:
         print("  ", r)
     print("  spearman n_high:", iv["market_djia"]["spearman_n_high_vs_abs_return"])
     print("\nSentiment vs returns:", iv["sentiment"])
-    metrics.update({"events_eval": ev, "impact_validation": iv})
+    metrics.update({"events_eval": ev, "sentiment_gold_eval": sg, "impact_validation": iv})
     path.write_text(json.dumps(metrics, indent=2, default=float))
 
 
