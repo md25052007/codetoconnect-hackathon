@@ -89,7 +89,7 @@ EVENT_SEVERITY = {
 
 SOURCE_CREDIBILITY = {"news": 1.0, "social": 0.75}
 
-# Module B: stress test is triggered when a signal of this class reaches this impact
+# Module B: stress test is triggered when a market-level signal of this class has impact ABOVE this value
 STRESS_TRIGGERS = {
     "Geopolitical": 7,
     "Macroeconomic": 7,
