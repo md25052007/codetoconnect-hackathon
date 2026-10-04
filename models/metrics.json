@@ -1,0 +1,245 @@
+{
+  "sentiment": {
+    "datasets": "Financial PhraseBank v1.0 (4,838) + Twitter Financial News Sentiment (9,543); 20% stratified hold-out",
+    "n_train": 11504,
+    "n_test": 2877,
+    "ensemble_weights": {
+      "news": {
+        "lexicon_weight": 0.2,
+        "neutral_band": 0.375,
+        "cv_macro_f1": 0.7267
+      },
+      "social": {
+        "lexicon_weight": 0.1,
+        "neutral_band": 0.35,
+        "cv_macro_f1": 0.7338
+      }
+    },
+    "test": {
+      "news": {
+        "n_test": 968,
+        "baseline_vader": {
+          "accuracy": 0.5434,
+          "macro_f1": 0.4994
+        },
+        "baseline_vader_finance_lexicon": {
+          "accuracy": 0.5496,
+          "macro_f1": 0.5224
+        },
+        "tfidf_lr_model": {
+          "accuracy": 0.7862,
+          "macro_f1": 0.7537
+        },
+        "ensemble": {
+          "accuracy": 0.7634,
+          "macro_f1": 0.7214
+        },
+        "ensemble_allagree_accuracy": 0.8575
+      },
+      "social": {
+        "n_test": 1909,
+        "baseline_vader": {
+          "accuracy": 0.4903,
+          "macro_f1": 0.4459
+        },
+        "baseline_vader_finance_lexicon": {
+          "accuracy": 0.5092,
+          "macro_f1": 0.481
+        },
+        "tfidf_lr_model": {
+          "accuracy": 0.7936,
+          "macro_f1": 0.7262
+        },
+        "ensemble": {
+          "accuracy": 0.8004,
+          "macro_f1": 0.7313
+        }
+      }
+    }
+  },
+  "events_training": {
+    "weak_labels": {
+      "Other": 6000,
+      "Geopolitical": 5075,
+      "Earnings": 3638,
+      "Product Launch": 1682,
+      "Merger/Acquisition": 830,
+      "Regulatory/Legal": 757,
+      "Macroeconomic": 492,
+      "Credit Event": 81
+    },
+    "n_train_with_augmentation": 30978,
+    "agreement_with_weak_labels_heldout": {
+      "accuracy": 0.8603,
+      "macro_f1": 0.8509
+    }
+  },
+  "events_eval": {
+    "rules_only": {
+      "accuracy": 0.67,
+      "macro_f1": 0.5941
+    },
+    "weak_supervised_model_only": {
+      "accuracy": 0.635,
+      "macro_f1": 0.5858
+    },
+    "hybrid": {
+      "accuracy": 0.675,
+      "macro_f1": 0.6044
+    },
+    "hybrid_report": {
+      "Credit Event": {
+        "precision": 0.6428571428571429,
+        "recall": 1.0,
+        "f1-score": 0.782608695652174,
+        "support": 9.0
+      },
+      "Earnings": {
+        "precision": 0.25,
+        "recall": 0.42857142857142855,
+        "f1-score": 0.3157894736842105,
+        "support": 7.0
+      },
+      "Geopolitical": {
+        "precision": 0.71875,
+        "recall": 0.71875,
+        "f1-score": 0.71875,
+        "support": 32.0
+      },
+      "Macroeconomic": {
+        "precision": 0.7058823529411765,
+        "recall": 0.75,
+        "f1-score": 0.7272727272727273,
+        "support": 16.0
+      },
+      "Merger/Acquisition": {
+        "precision": 0.4444444444444444,
+        "recall": 0.8,
+        "f1-score": 0.5714285714285714,
+        "support": 5.0
+      },
+      "Other": {
+        "precision": 0.7684210526315789,
+        "recall": 0.6759259259259259,
+        "f1-score": 0.7192118226600985,
+        "support": 108.0
+      },
+      "Product Launch": {
+        "precision": 0.5,
+        "recall": 0.6,
+        "f1-score": 0.5454545454545454,
+        "support": 10.0
+      },
+      "Regulatory/Legal": {
+        "precision": 0.5555555555555556,
+        "recall": 0.38461538461538464,
+        "f1-score": 0.45454545454545453,
+        "support": 13.0
+      },
+      "accuracy": 0.675,
+      "macro avg": {
+        "precision": 0.5732388185537374,
+        "recall": 0.6697328423890925,
+        "f1-score": 0.6043826613372227,
+        "support": 200.0
+      },
+      "weighted avg": {
+        "precision": 0.6963187503071404,
+        "recall": 0.675,
+        "f1-score": 0.6789301214054627,
+        "support": 200.0
+      }
+    },
+    "n": 200
+  },
+  "impact_validation": {
+    "companies": {
+      "by_impact_bucket": [
+        {
+          "bucket": "1-3 (low)",
+          "days": 5021,
+          "mean_abs_return_pct": 0.925,
+          "rel_move_vs_typical": 0.915
+        },
+        {
+          "bucket": "3-5",
+          "days": 3550,
+          "mean_abs_return_pct": 1.127,
+          "rel_move_vs_typical": 1.033
+        },
+        {
+          "bucket": "5-7",
+          "days": 826,
+          "mean_abs_return_pct": 1.512,
+          "rel_move_vs_typical": 1.359
+        },
+        {
+          "bucket": "7-10 (high)",
+          "days": 52,
+          "mean_abs_return_pct": 1.462,
+          "rel_move_vs_typical": 1.282
+        }
+      ],
+      "spearman_impact_vs_abs_return": 0.0773
+    },
+    "market_djia": {
+      "by_impact_bucket": [
+        {
+          "bucket": "1-3 (low)",
+          "days": 0,
+          "mean_abs_return_pct": NaN,
+          "rel_move_vs_typical": NaN
+        },
+        {
+          "bucket": "3-5",
+          "days": 0,
+          "mean_abs_return_pct": NaN,
+          "rel_move_vs_typical": NaN
+        },
+        {
+          "bucket": "5-7",
+          "days": 324,
+          "mean_abs_return_pct": 0.667,
+          "rel_move_vs_typical": 1.036
+        },
+        {
+          "bucket": "7-10 (high)",
+          "days": 241,
+          "mean_abs_return_pct": 0.613,
+          "rel_move_vs_typical": 0.952
+        }
+      ],
+      "spearman_impact_vs_abs_return": -0.0495,
+      "by_high_impact_count": [
+        {
+          "high_bucket": "0",
+          "days": 324,
+          "mean_abs_return_pct": 0.667
+        },
+        {
+          "high_bucket": "1-2",
+          "days": 232,
+          "mean_abs_return_pct": 0.61
+        },
+        {
+          "high_bucket": "3-5",
+          "days": 9,
+          "mean_abs_return_pct": 0.688
+        },
+        {
+          "high_bucket": "6+",
+          "days": 0,
+          "mean_abs_return_pct": NaN
+        }
+      ],
+      "spearman_n_high_vs_abs_return": -0.0265
+    },
+    "sentiment": {
+      "n_entity_days": 5555,
+      "spearman_score_vs_same_day_return": 0.1188,
+      "spearman_score_vs_next_day_return": -0.0283,
+      "mean_return_pct_when_score_pos": 0.373,
+      "mean_return_pct_when_score_neg": -0.457
+    }
+  }
+}

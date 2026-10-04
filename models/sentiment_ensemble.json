@@ -1,0 +1,12 @@
+{
+  "news": {
+    "lexicon_weight": 0.2,
+    "neutral_band": 0.375,
+    "cv_macro_f1": 0.7267
+  },
+  "social": {
+    "lexicon_weight": 0.1,
+    "neutral_band": 0.35,
+    "cv_macro_f1": 0.7338
+  }
+}
