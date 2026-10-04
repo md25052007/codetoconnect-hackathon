@@ -100,8 +100,9 @@ STRESS_TRIGGERS = {
 
 # Module A: rebalancer parameters
 REBALANCE = {
-    "kappa": 1.5,          # tilt strength: weight multiplier = exp(kappa * score)
-    "half_life_days": 3,   # EWMA memory of the sentiment signal
+    "kappa": 0.35,         # tilt strength: weight multiplier = exp(kappa * z), z = relative sentiment
+    "z_floor": 0.03,       # minimum cross-sectional dispersion used to standardise scores
+    "half_life_days": 5,   # EWMA memory of the sentiment signal
     "min_weight": 0.01,
     "max_weight": 0.12,
     "max_turnover": 0.20,  # max one-way turnover per rebalance

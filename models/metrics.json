@@ -241,5 +241,38 @@
       "mean_return_pct_when_score_pos": 0.373,
       "mean_return_pct_when_score_neg": -0.457
     }
+  },
+  "module_a_backtest": {
+    "period": "2014-01-03 to 2016-04-04",
+    "trading_days": 566,
+    "sentiment_index": {
+      "total_return_pct": 21.48,
+      "cagr_pct": 9.05,
+      "volatility_pct": 15.52,
+      "sharpe": 0.583,
+      "max_drawdown_pct": -15.64
+    },
+    "equal_weight": {
+      "total_return_pct": 22.28,
+      "cagr_pct": 9.37,
+      "volatility_pct": 15.43,
+      "sharpe": 0.607,
+      "max_drawdown_pct": -14.53
+    },
+    "avg_daily_turnover_pct": 3.63,
+    "tracking_error_pct": 1.46,
+    "information_ratio": -0.191,
+    "hit_rate_pct": 48.9,
+    "avg_max_weight_pct": 8.95,
+    "avg_min_weight_pct": 3.16,
+    "params": {
+      "kappa": 0.35,
+      "z_floor": 0.03,
+      "half_life_days": 5,
+      "min_weight": 0.01,
+      "max_weight": 0.12,
+      "max_turnover": 0.2,
+      "cost_bps": 5
+    }
   }
 }
