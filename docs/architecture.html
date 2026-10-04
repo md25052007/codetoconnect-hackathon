@@ -1,0 +1,82 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Architecture</title>
+<style>
+  :root { --ink:#1d1d1b; --muted:#5c5b57; --line:#9a9993; --bg:#ffffff; --card:#f6f6f3;
+          --blue:#2a78d6; --orange:#eb6834; --aqua:#1baf7a; --violet:#4a3aa7; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); font-family: Inter, "Segoe UI", system-ui, sans-serif; color:var(--ink); }
+  .wrap { width:1600px; padding:36px 40px 30px; }
+  h1 { font-size:28px; margin:0 0 4px; letter-spacing:-.01em; }
+  .sub { color:var(--muted); font-size:15px; margin-bottom:26px; }
+  .grid { display:grid; grid-template-columns: 250px 40px 300px 40px 470px 40px 360px; align-items:stretch; }
+  .col { display:flex; flex-direction:column; gap:14px; }
+  .col h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0 0 2px; }
+  .box { background:var(--card); border-radius:10px; padding:12px 14px; border-left:5px solid var(--line); font-size:14px; line-height:1.35; }
+  .box b { display:block; font-size:15px; margin-bottom:3px; }
+  .box small { color:var(--muted); display:block; }
+  .src { border-left-color: var(--orange); }
+  .ing { border-left-color: var(--violet); }
+  .nlp { border-left-color: var(--blue); }
+  .out { border-left-color: var(--aqua); }
+  .engine { border:2px solid var(--blue); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:10px; background:#f3f8fe; }
+  .engine .title { font-weight:700; font-size:17px; color:var(--blue); }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .arrow { display:flex; align-items:center; justify-content:center; color:var(--line); font-size:30px; }
+  .contract { font-family: ui-monospace, Menlo, monospace; font-size:11.5px; background:#fff; border:1px dashed var(--blue);
+              border-radius:8px; padding:8px 10px; color:#204a80; white-space:pre; }
+  .train { margin-top:22px; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:14px; }
+  .train .box { border-left-color:#c98500; }
+  .foot { margin-top:16px; color:var(--muted); font-size:13px; }
+</style></head>
+<body><div class="wrap">
+<h1>AI/NLP Financial Risk Engine: architecture and data flow</h1>
+<div class="sub">Unstructured text in, structured risk signals out, consumed by two downstream modules. Everything runs locally in Python.</div>
+<div class="grid">
+  <div class="col">
+    <h2>1 · Sources</h2>
+    <div class="box src"><b>News feed</b>Reddit r/worldnews top-25 headlines/day<small>20,485 headlines · 2014–2016</small></div>
+    <div class="box src"><b>Social media</b>Tweets mentioning the 20 index stocks (StockNet)<small>59,777 tweets · 2014–2016</small></div>
+    <div class="box src"><b>Live connectors</b>Google News RSS · Reddit r/stocks, r/investing, r/wallstreetbets<small>python main.py live</small></div>
+    <div class="box src"><b>Market data</b>Daily adjusted prices (20 stocks + DJIA)<small>back-test &amp; validation only</small></div>
+  </div>
+  <div class="arrow">➜</div>
+  <div class="col">
+    <h2>2 · Ingestion</h2>
+    <div class="box ing"><b>Source adapters</b>Each source yields a common <code>Document</code> (id, source, channel, timestamp, text, tickers, meta)</div>
+    <div class="box ing"><b>Chronological merge</b>heap-merge of all sources into one time-ordered stream</div>
+    <div class="box ing"><b>Replay / real time</b>accelerated replay of history, or live polling; batch of 512 docs to the engine</div>
+    <div class="box ing"><b>Text cleaning</b>URLs, @mentions, RT prefixes, HTML entities; cashtags kept for linking</div>
+  </div>
+  <div class="arrow">➜</div>
+  <div class="engine">
+    <div class="title">3 · NLP Risk Engine (the core deliverable)</div>
+    <div class="box nlp"><b>Entity linking</b>cashtags → company aliases → sector keywords (oil → XOM, CVX) → MARKET for macro / geopolitical news; spam lists damped</div>
+    <div class="row2">
+      <div class="box nlp"><b>Sentiment  −1 … +1</b>TF-IDF + logistic regression (trained on 14k labelled finance sentences &amp; tweets) ⊕ VADER + finance lexicon; domain-aware weights; neutral dead-zone → 0</div>
+      <div class="box nlp"><b>Event classification</b>weighted domain rules ⊕ weak-supervised classifier (rules label 80k texts → model learns context); 7 classes + Other</div>
+    </div>
+    <div class="box nlp"><b>Impact score  1 … 10</b>severity(event) × intensity(|sentiment|) × credibility(source, followers) × reach(systemic?) + urgency + magnitude + popularity, every factor returned for explainability</div>
+    <div class="contract">Output contract (one signal per document × entity):
+{ "entity": "MARKET",  "entity_type": "market",
+  "sentiment": -0.80,  "sentiment_label": "negative",
+  "event_type": "Geopolitical",  "event_confidence": 0.81,
+  "impact": 10.0,  "source": "news",  "timestamp": "...",
+  "explain": { "severity": 0.8, "reach": 1.15, ... } }</div>
+  </div>
+  <div class="arrow">➜</div>
+  <div class="col">
+    <h2>4 · Signal store &amp; consumers</h2>
+    <div class="box out"><b>Signal store</b>signals.jsonl.gz (101k doc-level signals) · SQLite · daily per-entity aggregates (impact-weighted, volume-shrunk score, buzz)</div>
+    <div class="box out"><b>FastAPI</b>/signals · /analyze · /stream (SSE) · /modules/index/* · /modules/stress/*</div>
+    <div class="box out"><b>Module A · Index rebalancer</b>EWMA sentiment → relative z-score → exp tilt, 1–12 % caps, 20 % turnover limit; back-test vs equal weight</div>
+    <div class="box out"><b>Module B · Stress tester</b>trigger: negative market-level event, impact &gt; threshold (+ corroboration) → scaled shock scenario → bonds, loans, equity, IRS, CDS, FX P&amp;L</div>
+    <div class="box out"><b>Streamlit dashboard</b>live analysis &amp; replay · weights over time · before/after stress · model quality</div>
+  </div>
+</div>
+<div class="train">
+  <div class="box"><b>Offline training</b>Financial PhraseBank (4.8k) + Twitter Financial News Sentiment (9.5k) → sentiment model; rule-labelled corpus → event model (python main.py train)</div>
+  <div class="box"><b>Evaluation</b>held-out test sets · 200 hand-labelled headlines/tweets · impact vs realised |returns| (python main.py evaluate)</div>
+  <div class="box"><b>Optional back-ends</b>FinBERT sentiment (RISK_ENGINE_FINBERT=1) and BART zero-shot events (RISK_ENGINE_ZEROSHOT=1) plug into the same interfaces</div>
+</div>
+<div class="foot">All data is public (StockNet MIT, Reddit WorldNews CC BY-NC-SA, Financial PhraseBank CC BY-NC-SA) or synthetic (banking portfolio). No proprietary or client data.</div>
+</div></body></html>
