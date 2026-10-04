@@ -15,7 +15,7 @@ matching shock scenario is scaled by the impact score and applied to every trade
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 import numpy as np
 import pandas as pd
@@ -117,7 +117,7 @@ def run_stress(event_type: str, impact: float, trigger_text: str = "", trigger_t
                                        "market_value", "pnl"]].to_dict(orient="records")
     return StressResult(
         event_type=event_type, impact=impact, severity=severity_factor(impact) if scenario is None else 1.0,
-        scenario=sc.to_dict(), trigger_text=trigger_text, trigger_time=trigger_time or datetime.utcnow().isoformat(),
+        scenario=sc.to_dict(), trigger_text=trigger_text, trigger_time=trigger_time or datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
         value_before=round(before, 0), value_after=round(before + pnl, 0), pnl=round(pnl, 0),
         pnl_pct=round(100 * pnl / before, 3), capital_at_risk_pct=round(100 * -pnl / (ASSUMED_CAPITAL_RATIO * before), 2),
         by_asset_class=grp("asset_class"), by_sector=grp("sector"),

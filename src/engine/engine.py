@@ -53,8 +53,8 @@ class RiskEngine:
 
     def analyze_text(self, text: str, source: str = "news", tickers: list[str] | None = None) -> list[RiskSignal]:
         """Convenience entry point for ad-hoc text (API /analyze, dashboard)."""
-        from datetime import datetime
-        doc = Document(id="adhoc", source=source, channel="manual", timestamp=datetime.utcnow(),
+        from datetime import datetime, timezone
+        doc = Document(id="adhoc", source=source, channel="manual", timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
                        text=text, tickers=tickers or [])
         return self.analyze_batch([doc], keep_unlinked=True)
 

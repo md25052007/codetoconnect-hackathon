@@ -95,7 +95,7 @@ class GoogleNewsRSS(Source):
             url = f"https://news.google.com/rss/search?q={quote_plus(q)}&hl=en-US&gl=US&ceid=US:en"
             feed = feedparser.parse(url)
             for e in feed.entries[: self.per_query]:
-                ts = datetime(*e.published_parsed[:6]) if getattr(e, "published_parsed", None) else datetime.utcnow()
+                ts = datetime(*e.published_parsed[:6]) if getattr(e, "published_parsed", None) else datetime.now(timezone.utc).replace(tzinfo=None)
                 yield Document(id=f"gn-{abs(hash(e.get('link', e.title)))}", source="news", channel="google-news",
                                timestamp=ts, text=e.title, tickers=tickers, meta={"url": e.get("link")})
 
