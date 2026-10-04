@@ -92,8 +92,8 @@ All data is **public or synthetic**. No proprietary or client data is used. See 
 Runtime: Python 3.10+ (tested on Python 3.13, Linux). No GPU or API keys needed. Trained models and processed signals are committed, so the dashboard works straight after install.
 
 ```bash
-git clone https://github.com/md2505/nitk-d-maithreya-hackathon.git
-cd nitk-d-maithreya-hackathon
+git clone https://github.com/md25052007/codetoconnect-hackathon.git
+cd codetoconnect-hackathon
 python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
