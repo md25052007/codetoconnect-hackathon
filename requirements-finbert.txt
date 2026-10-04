@@ -1,0 +1,5 @@
+# Optional: transformer back-ends (FinBERT sentiment + zero-shot event classifier).
+# Installs ~2 GB (PyTorch). The engine runs fine without these.
+-r requirements.txt
+transformers>=4.40
+torch>=2.2
