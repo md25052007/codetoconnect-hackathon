@@ -8,7 +8,7 @@ All data is public or synthetic. No proprietary or client data is used.
 | `raw/news_reddit_worldnews.csv.gz` | 20,485 | Top-25 daily Reddit r/worldnews headlines, same period. From Kaggle's "Daily News for Stock Market Prediction" (Aaron7sun) | CC BY-NC-SA 4.0 | Source #2: news feed |
 | `raw/prices.csv` | 577 days | Daily adjusted closes for the 20 stocks (StockNet / Yahoo Finance) and the DJIA | MIT / public | Back-testing Module A and validating the impact score |
 | `train/financial_phrasebank.csv` | 4,838 | Financial PhraseBank v1.0 (Malo et al., 2014): financial news sentences labelled by 16 domain experts | CC BY-NC-SA 3.0 | Training and testing the sentiment model |
-| `eval/event_gold.csv` | 200 | Headlines from the two sources, annotated by hand with an event type | this repo | Evaluating the event classifier |
+| `eval/event_gold.csv` | 200 | Headlines and tweets from the two sources, annotated with an event type (and, for the 92 market-relevant ones, sentiment) with AI assistance | this repo | Evaluating the event classifier |
 | `portfolio/transactions.csv` | synthetic | Wholesale banking trades (loans, bonds, IRS, CDS, FX forwards, equities) made by `scripts/generate_portfolio.py`, seed 42 | this repo | Module B portfolio |
 | `processed/*` | generated | Engine output (`python main.py pipeline`) | this repo | Signals consumed by the modules, the API and the dashboard |
 

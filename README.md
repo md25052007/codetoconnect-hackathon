@@ -77,7 +77,7 @@ All data is **public or synthetic**. No proprietary or client data is used. See 
 | **News feed (source 2)** | Top-25 daily Reddit r/worldnews headlines, same period. From Kaggle's *Daily News for Stock Market Prediction* | 20,485 headlines |
 | Prices | Daily adjusted closes of the 20 stocks + DJIA (StockNet / Yahoo Finance) | 577 days |
 | Sentiment training | Financial PhraseBank v1.0 (expert-labelled) + Twitter Financial News Sentiment (labelled tweets) | 4,838 + 9,543 |
-| Event / sentiment evaluation | 200 headlines and tweets from the two sources, labelled by hand (`data/eval/event_gold.csv`) | 200 |
+| Event / sentiment evaluation | 200 headlines and tweets from the two sources, annotated for this project with AI assistance (`data/eval/event_gold.csv`) | 200 |
 | Banking portfolio | Synthetic trades (`scripts/generate_portfolio.py`, seed 42), fictional counterparties | 203 trades, $8.1bn |
 
 **Assumptions**
@@ -165,7 +165,11 @@ Over the 27 months, the engine flagged **193 stress triggers on 178 days**. Exam
 * The supervised sentiment model is weak on geopolitical text it was never trained on. Domain routing helps, but FinBERT (optional back-end) or in-domain labels would help more.
 * Reddit world-news is not a market-focused feed, so market-level impact does not predict DJIA moves (Spearman ≈ 0). The geopolitical trigger therefore also requires several corroborating reports on the same day.
 * Sentiment explains same-day returns but does not forecast next-day returns (Spearman −0.02). Module A should be read as risk-aware tilting, not as alpha.
-* The evaluation set is small (200 texts) and was labelled by the author.
+* The evaluation set is small (200 texts) and was annotated with AI assistance by a single annotator, not by multiple independent raters.
+
+## AI assistance
+
+AI coding assistance (Claude) was used to build this project, in line with the hackathon's AI-usage policy. All design choices, results and limitations are documented here and reproducible with the commands above.
 
 ## Licence
 
